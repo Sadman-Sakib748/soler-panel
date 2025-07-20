@@ -27,30 +27,26 @@ function App() {
   const [planetSpeeds, setPlanetSpeeds] = useState(PLANET_DATA.map((p) => p.speed));
   const [hoveredPlanet, setHoveredPlanet] = useState(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false); // Drawer toggle
 
   useEffect(() => {
     if (!mountRef.current) return;
 
-    // Scene
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000011);
 
-    // Camera
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.set(0, 30, 60);
 
-    // Renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     mountRef.current.appendChild(renderer.domElement);
 
-    // OrbitControls
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
     controlsRef.current = controls;
 
-    // Lights
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
     scene.add(ambientLight);
 
@@ -58,7 +54,6 @@ function App() {
     sunLight.position.set(0, 0, 0);
     scene.add(sunLight);
 
-    // Stars
     const starsGeometry = new THREE.BufferGeometry();
     const starsCount = 5000;
     const starsPositions = new Float32Array(starsCount * 3);
@@ -70,14 +65,12 @@ function App() {
     const stars = new THREE.Points(starsGeometry, starsMaterial);
     scene.add(stars);
 
-    // Sun
     const sunGeometry = new THREE.SphereGeometry(3, 32, 32);
     const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
     const sun = new THREE.Mesh(sunGeometry, sunMaterial);
     scene.add(sun);
     sunRef.current = sun;
 
-    // Planets
     const planets = [];
     PLANET_DATA.forEach((planetData) => {
       const orbitGroup = new THREE.Group();
@@ -91,7 +84,6 @@ function App() {
 
       orbitGroup.add(planet);
 
-      // Orbit ring
       const orbitGeometry = new THREE.RingGeometry(planetData.distance - 0.05, planetData.distance + 0.05, 64);
       const orbitMaterial = new THREE.MeshBasicMaterial({ color: 0x444444, side: THREE.DoubleSide });
       const orbitLine = new THREE.Mesh(orbitGeometry, orbitMaterial);
@@ -102,7 +94,6 @@ function App() {
     });
     planetsRef.current = planets;
 
-    // Mouse Move
     const handleMouseMove = (e) => {
       const rect = renderer.domElement.getBoundingClientRect();
       mouseRef.current.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
@@ -115,14 +106,10 @@ function App() {
     };
     renderer.domElement.addEventListener("mousemove", handleMouseMove);
 
-    // Animation Loop
     const animate = () => {
       const delta = clockRef.current.getDelta();
-
-      // Sun rotate
       if (sunRef.current) sunRef.current.rotation.y += delta * 0.5;
 
-      // Planet rotations
       planets.forEach((planet, index) => {
         if (isPlaying) {
           planet.angle += planetSpeeds[index] * delta * 0.1;
@@ -131,7 +118,7 @@ function App() {
         }
       });
 
-      controls.update(); // OrbitControls update
+      controls.update();
       renderer.render(scene, camera);
       animationIdRef.current = requestAnimationFrame(animate);
     };
@@ -161,14 +148,31 @@ function App() {
   return (
     <div className="relative md:w-full h-screen bg-black">
       <div ref={mountRef} className="absolute inset-0" />
-      <div className="absolute md:top-4 md:left-4 bg-black/70 p-4  rounded-lg text-white">
-        <h2>Solar System Controls</h2>
-        <button onClick={() => setIsPlaying(!isPlaying)} className="px-2 py-1 bg-gray-600 rounded mt-2">
+
+      {/* Drawer Button for mobile */}
+      <button
+        onClick={() => setIsDrawerOpen(!isDrawerOpen)}
+        className="absolute top-4 left-4 z-50 md:hidden bg-gray-700 text-white px-3 py-2 rounded"
+      >
+        {isDrawerOpen ? "Close" : "Menu"}
+      </button>
+
+      {/* Drawer / Sidebar */}
+      <div
+        className={`fixed top-0 left-0 h-full w-64 bg-black/90 text-white p-4 z-40 transform ${
+          isDrawerOpen ? "translate-x-0" : "-translate-x-full"
+        } transition-transform duration-300 md:translate-x-0 md:relative md:w-72 md:block`}
+      >
+        <h2 className="text-lg font-bold">Solar System Controls</h2>
+        <button
+          onClick={() => setIsPlaying(!isPlaying)}
+          className="px-3 py-1 bg-gray-600 rounded mt-3"
+        >
           {isPlaying ? "Pause" : "Play"}
         </button>
         {PLANET_DATA.map((planet, i) => (
-          <div key={planet.name} className="mt-2">
-            <span>{planet.name} ({planetSpeeds[i].toFixed(1)}x)</span>
+          <div key={planet.name} className="mt-3">
+            <span className="block">{planet.name} ({planetSpeeds[i].toFixed(1)}x)</span>
             <input
               type="range"
               min="0"
@@ -176,12 +180,18 @@ function App() {
               step="0.1"
               value={planetSpeeds[i]}
               onChange={(e) => handleSpeedChange(i, e.target.value)}
+              className="w-full"
             />
           </div>
         ))}
       </div>
+
+      {/* Tooltip */}
       {hoveredPlanet && (
-        <div className="absolute bg-black/80 text-white p-2 rounded" style={{ left: mousePosition.x + 10, top: mousePosition.y - 10 }}>
+        <div
+          className="absolute bg-black/80 text-white p-2 rounded text-sm"
+          style={{ left: mousePosition.x + 10, top: mousePosition.y - 10 }}
+        >
           <strong>{hoveredPlanet}</strong>
           <p>{PLANET_DATA.find((p) => p.name === hoveredPlanet)?.info}</p>
         </div>
