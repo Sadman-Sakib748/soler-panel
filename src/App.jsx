@@ -159,9 +159,9 @@ function App() {
   };
 
   return (
-    <div className="relative w-full h-screen bg-black">
+    <div className="relative md:w-full h-screen bg-black">
       <div ref={mountRef} className="absolute inset-0" />
-      <div className="absolute top-4 left-4 bg-black/70 p-4 rounded-lg text-white">
+      <div className="absolute md:top-4 md:left-4 bg-black/70 p-4  rounded-lg text-white">
         <h2>Solar System Controls</h2>
         <button onClick={() => setIsPlaying(!isPlaying)} className="px-2 py-1 bg-gray-600 rounded mt-2">
           {isPlaying ? "Pause" : "Play"}
